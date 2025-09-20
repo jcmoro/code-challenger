@@ -66,12 +66,6 @@ Tests de integración únicamente:
 make test-integration
 ```
 
-Generar reporte de cobertura HTML:
-
-```bash
-make test-coverage
-```
-
 ---
 
 ## 🔍 Calidad de Código
