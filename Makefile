@@ -1,4 +1,4 @@
-.PHONY: help install install-dev update composer-validate test test-unit test-integration test-coverage phpstan rector rector-fix cs-check cs-fix serve bash quality quality-fix ci setup clean cache-clear api-test-* docker-build docker-up docker-down docker-restart docker-status docker-logs
+.PHONY: help install install-dev update composer-validate test test-unit test-integration test-coverage phpstan rector rector-fix cs-check cs-fix bash quality quality-fix ci setup clean cache-clear api-test-* docker-build docker-up docker-down docker-restart docker-status docker-logs
 
 # Variables
 CURRENT_DIR := $(shell pwd)
@@ -115,10 +115,6 @@ cs-fix: ## Fix code style
 	$(PHP_DOCKER) /bin/bash -c "vendor/bin/phpcbf -d memory_limit=-1 --standard=./phpcs.xml"
 
 ##@ 🌐 Development Server
-
-serve: docker-up ## Start development server on http://localhost:8000
-	@echo "${GREEN}Development server running at http://localhost:8000${NC}"
-	@echo "${YELLOW}Use 'make docker-down' to stop or 'make docker-logs' to see logs${NC}"
 
 bash: ## Access container bash
 	@if [ $$(docker ps -q -f name=$(CONTAINER_NAME)) ]; then \
