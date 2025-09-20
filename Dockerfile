@@ -16,7 +16,7 @@ COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Install PHP dependencies
-COPY composer.json composer.lock ./
+COPY composer.json ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Copy application code
