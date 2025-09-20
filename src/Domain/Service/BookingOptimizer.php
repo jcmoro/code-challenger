@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Service;
 
 use App\Domain\Entity\BookingRequest;
+use App\Domain\ValueObject\BookingOptimizationResult;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Servicio de dominio que resuelve el problema de interval scheduling con pesos:
+ * encuentra la combinación de reservas no solapadas que maximiza el beneficio.
+ */
 final readonly class BookingOptimizer implements BookingOptimizerInterface
 {
     public function __construct(private LoggerInterface $logger)
@@ -15,51 +20,46 @@ final readonly class BookingOptimizer implements BookingOptimizerInterface
 
     /**
      * @param BookingRequest[] $requests
-     * @return array{
-     *   request_ids: string[],
-     *   total_profit: float,
-     *   avg_night: float,
-     *   min_night: float,
-     *   max_night: float
-     * }
      */
-    public function findOptimalCombination(array $requests): array
+    public function findOptimalCombination(array $requests): BookingOptimizationResult
     {
-        $this->logger->info('Iniciando optimización de reservas', ['requests_count' => count($requests)]);
+        $this->logger->info('Iniciando optimización de reservas', [
+            'requests_count' => count($requests),
+        ]);
 
         if ($requests === []) {
-            $this->logger->info('Array de reservas vacío, retornando resultado por defecto');
-            return $this->buildEmptyResult();
+            $this->logger->info('Array de reservas vacío, retornando resultado vacío');
+            return BookingOptimizationResult::empty();
         }
 
-        // Ordenar por fecha de check-out
+        // Ordenamos las reservas por fecha de checkout para aplicar mejor beneficio
         usort($requests, fn(BookingRequest $a, BookingRequest $b): int => $a->getCheckOut() <=> $b->getCheckOut());
 
-        $n = count($requests);
-        $dp = array_fill(0, $n, 0);
-        $ids = array_fill(0, $n, []);     // IDs seleccionados
+        $count = count($requests);
+        $maxProfitAtIndex = array_fill(0, $count, 0.0);
+        $selectedIdsAtIndex = array_fill(0, $count, []);
 
-        for ($i = 0; $i < $n; ++$i) {
+        for ($i = 0; $i < $count; ++$i) {
             $currentProfit = $requests[$i]->getTotalProfit();
             $currentIds = [$requests[$i]->getRequestId()];
 
             $latestIndex = $this->findLatestNonConflictingIndex($requests, $i);
             if ($latestIndex !== null) {
-                $currentProfit += $dp[$latestIndex];
-                $currentIds = array_merge($ids[$latestIndex], $currentIds);
+                $currentProfit += $maxProfitAtIndex[$latestIndex];
+                $currentIds = array_merge($selectedIdsAtIndex[$latestIndex], $currentIds);
             }
 
-            // Elegir mejor entre tomar o no tomar la reserva actual
-            if ($i > 0 && $dp[$i - 1] > $currentProfit) {
-                $dp[$i] = $dp[$i - 1];
-                $ids[$i] = $ids[$i - 1];
+            // Decidir mejor beneficio: incluir o excluir la reserva actual
+            if ($i > 0 && $maxProfitAtIndex[$i - 1] > $currentProfit) {
+                $maxProfitAtIndex[$i] = $maxProfitAtIndex[$i - 1];
+                $selectedIdsAtIndex[$i] = $selectedIdsAtIndex[$i - 1];
             } else {
-                $dp[$i] = $currentProfit;
-                $ids[$i] = $currentIds;
+                $maxProfitAtIndex[$i] = $currentProfit;
+                $selectedIdsAtIndex[$i] = $currentIds;
             }
         }
 
-        $optimalIds = $ids[$n - 1];
+        $optimalIds = $selectedIdsAtIndex[$count - 1];
         $optimalRequests = array_filter(
             $requests,
             fn(BookingRequest $r): bool => in_array($r->getRequestId(), $optimalIds, true)
@@ -69,8 +69,8 @@ final readonly class BookingOptimizer implements BookingOptimizerInterface
     }
 
     /**
-     * Encuentra el índice de la última reserva no conflictiva usando búsqueda binaria.
-     * Devuelve null si no hay ninguna.
+     * Encuentra mediante búsqueda binaria el índice de la última reserva
+     * que no solapa con la actual. Devuelve null si no hay ninguna.
      *
      * @param BookingRequest[] $requests
      */
@@ -95,51 +95,26 @@ final readonly class BookingOptimizer implements BookingOptimizerInterface
     }
 
     /**
+     * Construye el VO de resultado a partir de las reservas seleccionadas.
+     *
      * @param BookingRequest[] $selectedRequests
-     * @return array{
-     *   request_ids: string[],
-     *   total_profit: float,
-     *   avg_night: float,
-     *   min_night: float,
-     *   max_night: float
-     * }
      */
-    private function buildResult(array $selectedRequests): array
+    private function buildResult(array $selectedRequests): BookingOptimizationResult
     {
         if ($selectedRequests === []) {
-            return $this->buildEmptyResult();
+            return BookingOptimizationResult::empty();
         }
 
-        $requestIds = array_map(fn($r): string => $r->getRequestId(), $selectedRequests);
-        $profits = array_map(fn($r): float => $r->getTotalProfit(), $selectedRequests);
-        $profitsPerNight = array_map(fn($r): float => $r->getProfitPerNight(), $selectedRequests);
+        $requestIds = array_map(fn(BookingRequest $r): string => $r->getRequestId(), $selectedRequests);
+        $profits = array_map(fn(BookingRequest $r): float => $r->getTotalProfit(), $selectedRequests);
+        $profitsPerNight = array_map(fn(BookingRequest $r): float => $r->getProfitPerNight(), $selectedRequests);
 
-        return [
-            'request_ids' => $requestIds,
-            'total_profit' => round(array_sum($profits), 2),
-            'avg_night' => round(array_sum($profitsPerNight) / count($profitsPerNight), 2),
-            'min_night' => round(min($profitsPerNight), 2),
-            'max_night' => round(max($profitsPerNight), 2),
-        ];
-    }
-
-    /**
-     * @return array{
-     *    request_ids: string[],
-     *    total_profit: float,
-     *    avg_night: float,
-     *    min_night: float,
-     *    max_night: float
-     *  }
-     */
-    private function buildEmptyResult(): array
-    {
-        return [
-            'request_ids' => [],
-            'total_profit' => 0,
-            'avg_night' => 0,
-            'min_night' => 0,
-            'max_night' => 0,
-        ];
+        return new BookingOptimizationResult(
+            requestIds: $requestIds,
+            totalProfit: round(array_sum($profits), 2),
+            avgNight: round(array_sum($profitsPerNight) / count($profitsPerNight), 2),
+            minNight: round(min($profitsPerNight), 2),
+            maxNight: round(max($profitsPerNight), 2),
+        );
     }
 }

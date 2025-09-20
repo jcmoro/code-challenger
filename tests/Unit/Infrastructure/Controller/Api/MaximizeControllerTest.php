@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Infrastructure\Controller\Api;
 
 use App\Application\DTO\BookingRequestDTO;
 use App\Application\UseCase\MaximizeProfits\MaximizeProfitsUseCaseInterface;
+use App\Domain\ValueObject\BookingOptimizationResult;
 use App\Infrastructure\Controller\Api\MaximizeController;
 use App\Infrastructure\Exception\ApiException;
 use App\Infrastructure\Http\Request\BookingRequestParserInterface;
@@ -70,7 +71,6 @@ final class MaximizeControllerTest extends TestCase
 
         $request = new Request([], [], [], [], [], [], json_encode($requestData));
 
-        // Create real DTOs instead of mocking
         $dto1 = new BookingRequestDTO();
         $dto1->requestId = 'bookata_XY123';
         $dto1->checkIn = '2020-01-01';
@@ -91,25 +91,25 @@ final class MaximizeControllerTest extends TestCase
             ->with(json_encode($requestData))
             ->andReturn([$dto1, $dto2]);
 
-        $expectedResult = [
-            'request_ids' => ['bookata_XY123', 'acme_AAAAA'],
-            'total_profit' => 88.0,
-            'avg_night' => 10.0,
-            'min_night' => 8.0,
-            'max_night' => 12.0,
-        ];
+        $expectedVo = new BookingOptimizationResult(
+            requestIds: ['bookata_XY123', 'acme_AAAAA'],
+            totalProfit: 88.0,
+            avgNight: 10.0,
+            minNight: 8.0,
+            maxNight: 12.0
+        );
 
         $this->maximizeProfitsUseCase
             ->shouldReceive('execute')
             ->once()
             ->with([$dto1, $dto2])
-            ->andReturn($expectedResult);
+            ->andReturn($expectedVo);
 
         $response = $this->controller->maximize($request);
 
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
-        $this->assertJsonStringEqualsJsonString(json_encode($expectedResult), $response->getContent());
+        $this->assertJsonStringEqualsJsonString(json_encode($expectedVo->toArray()), $response->getContent());
     }
 
     public function testMaximizeReturnsBadRequestForInvalidJson(): void

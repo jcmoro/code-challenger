@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\MaximizeProfits;
 
+use App\Domain\ValueObject\BookingOptimizationResult;
 use Psr\Log\NullLogger;
 use App\Application\DTO\BookingRequestDTO;
 use App\Domain\Entity\BookingRequest;
@@ -22,16 +23,9 @@ final readonly class MaximizeProfitsUseCase implements MaximizeProfitsUseCaseInt
 
     /**
      * @param BookingRequestDTO[] $requestsDTO
-     * @return array{
-     *   request_ids: string[],
-     *   total_profit: float,
-     *   avg_night: float,
-     *   min_night: float,
-     *   max_night: float
-     * }
      * @throws InvalidBookingRequestException
      */
-    public function execute(array $requestsDTO): array
+    public function execute(array $requestsDTO): BookingOptimizationResult
     {
         $this->logger->debug('Maximizing profits for requests', ['count' => count($requestsDTO)]);
 
@@ -43,7 +37,7 @@ final readonly class MaximizeProfitsUseCase implements MaximizeProfitsUseCaseInt
 
             $result = $this->bookingOptimizer->findOptimalCombination($bookingRequests);
 
-            $this->logger->debug('Profit maximization completed', $result);
+            $this->logger->debug('Profit maximization completed', $result->toArray());
 
             return $result;
         } catch (InvalidBookingRequestException $invalidBookingRequestException) {

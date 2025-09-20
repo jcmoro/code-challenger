@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Domain\Service;
 
 use App\Domain\Entity\BookingRequest;
 use App\Domain\Service\BookingOptimizer;
+use App\Domain\ValueObject\BookingOptimizationResult;
 use DateTimeImmutable;
 use Mockery;
 use PHPUnit\Framework\TestCase;
@@ -32,13 +33,14 @@ final class BookingOptimizerTest extends TestCase
 
         $expected = [
             'request_ids' => [],
-            'total_profit' => 0,
-            'avg_night' => 0,
-            'min_night' => 0,
-            'max_night' => 0,
+            'total_profit' => 0.0,
+            'avg_night' => 0.0,
+            'min_night' => 0.0,
+            'max_night' => 0.0,
         ];
 
-        $this->assertSame($expected, $result);
+        $this->assertInstanceOf(BookingOptimizationResult::class, $result);
+        $this->assertSame($expected, $result->toArray());
     }
 
     /**
@@ -56,18 +58,17 @@ final class BookingOptimizerTest extends TestCase
 
         $result = $this->optimizer->findOptimalCombination([$booking]);
 
-        $this->assertSame(['single_booking'], $result['request_ids']);
-        $this->assertEqualsWithDelta(40.0, $result['total_profit'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(8.0, $result['avg_night'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(8.0, $result['min_night'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(8.0, $result['max_night'], PHP_FLOAT_EPSILON);
+        $this->assertInstanceOf(BookingOptimizationResult::class, $result);
+        $this->assertSame(['single_booking'], $result->getRequestIds());
+        $this->assertEqualsWithDelta(40.0, $result->getTotalProfit(), PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(8.0, $result->getAvgNight(), PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(8.0, $result->getMinNight(), PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(8.0, $result->getMaxNight(), PHP_FLOAT_EPSILON);
     }
 
     public function testSelectsOptimalCombinationWithOverlappingBookings(): void
     {
         $bookings = [
-            // bookata_XY123: 2020-01-01 to 2020-01-06 (5 nights)
-            // Profit: 200 * 0.20 = 40.0, Per night: 40/5 = 8.0
             new BookingRequest(
                 requestId: 'bookata_XY123',
                 checkIn: new DateTimeImmutable('2020-01-01'),
@@ -75,9 +76,6 @@ final class BookingOptimizerTest extends TestCase
                 sellingRate: 200.0,
                 margin: 20.0
             ),
-
-            // kayete_PP234: 2020-01-04 to 2020-01-08 (4 nights) - OVERLAPS with bookata_XY123
-            // Profit: 156 * 0.05 = 7.8, Per night: 7.8/4 = 1.95
             new BookingRequest(
                 requestId: 'kayete_PP234',
                 checkIn: new DateTimeImmutable('2020-01-04'),
@@ -85,9 +83,6 @@ final class BookingOptimizerTest extends TestCase
                 sellingRate: 156.0,
                 margin: 5.0
             ),
-
-            // acme_AAAAA: 2020-01-10 to 2020-01-14 (4 nights) - NO OVERLAP
-            // Profit: 160 * 0.30 = 48.0, Per night: 48/4 = 12.0
             new BookingRequest(
                 requestId: 'acme_AAAAA',
                 checkIn: new DateTimeImmutable('2020-01-10'),
@@ -99,23 +94,11 @@ final class BookingOptimizerTest extends TestCase
 
         $result = $this->optimizer->findOptimalCombination($bookings);
 
-        // Debug information for troubleshooting
-        echo "\n=== DEBUG INFO ===\n";
-        echo "Selected requests: " . json_encode($result['request_ids']) . "\n";
-        echo "Total profit: " . $result['total_profit'] . "\n";
-
-        // Combinations analysis:
-        // - bookata_XY123 alone: 40.0
-        // - kayete_PP234 alone: 7.8
-        // - acme_AAAAA alone: 48.0
-        // - bookata_XY123 + acme_AAAAA: 40.0 + 48.0 = 88.0 (OPTIMAL)
-        // - kayete_PP234 + acme_AAAAA: 7.8 + 48.0 = 55.8
-        // - kayete_PP234 conflicts with bookata_XY123
-
-        $this->assertContains('bookata_XY123', $result['request_ids']);
-        $this->assertContains('acme_AAAAA', $result['request_ids']);
-        $this->assertNotContains('kayete_PP234', $result['request_ids']);
-        $this->assertEqualsWithDelta(88.0, $result['total_profit'], PHP_FLOAT_EPSILON);
+        $this->assertInstanceOf(BookingOptimizationResult::class, $result);
+        $this->assertContains('bookata_XY123', $result->getRequestIds());
+        $this->assertContains('acme_AAAAA', $result->getRequestIds());
+        $this->assertNotContains('kayete_PP234', $result->getRequestIds());
+        $this->assertEqualsWithDelta(88.0, $result->getTotalProfit(), PHP_FLOAT_EPSILON);
     }
 
     public function testSelectsAllNonOverlappingBookings(): void
@@ -146,11 +129,12 @@ final class BookingOptimizerTest extends TestCase
 
         $result = $this->optimizer->findOptimalCombination($bookings);
 
-        $this->assertCount(3, $result['request_ids']);
-        $this->assertContains('booking_1', $result['request_ids']);
-        $this->assertContains('booking_2', $result['request_ids']);
-        $this->assertContains('booking_3', $result['request_ids']);
-        $this->assertEqualsWithDelta(45.0, $result['total_profit'], PHP_FLOAT_EPSILON);
+        $this->assertInstanceOf(BookingOptimizationResult::class, $result);
+        $this->assertCount(3, $result->getRequestIds());
+        $this->assertContains('booking_1', $result->getRequestIds());
+        $this->assertContains('booking_2', $result->getRequestIds());
+        $this->assertContains('booking_3', $result->getRequestIds());
+        $this->assertEqualsWithDelta(45.0, $result->getTotalProfit(), PHP_FLOAT_EPSILON);
     }
 
     public function testHandlesComplexOverlappingScenario(): void
@@ -182,11 +166,11 @@ final class BookingOptimizerTest extends TestCase
 
         $result = $this->optimizer->findOptimalCombination($bookings);
 
-        // Should select A + C = 140.0 (better than just A = 100.0)
-        $this->assertContains('A', $result['request_ids']);
-        $this->assertContains('C', $result['request_ids']);
-        $this->assertNotContains('B', $result['request_ids']);
-        $this->assertEqualsWithDelta(140.0, $result['total_profit'], PHP_FLOAT_EPSILON);
+        $this->assertInstanceOf(BookingOptimizationResult::class, $result);
+        $this->assertContains('A', $result->getRequestIds());
+        $this->assertContains('C', $result->getRequestIds());
+        $this->assertNotContains('B', $result->getRequestIds());
+        $this->assertEqualsWithDelta(140.0, $result->getTotalProfit(), PHP_FLOAT_EPSILON);
     }
 
     public function testSpecificOverlapScenarioFromOptimizer(): void

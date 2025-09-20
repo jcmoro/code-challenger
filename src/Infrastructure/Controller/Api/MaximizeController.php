@@ -36,11 +36,11 @@ final class MaximizeController extends AbstractController
 
             $this->logger->info('Optimization completed', [
                 'request_id' => $requestId,
-                'selected_requests' => $result['request_ids'],
-                'total_profit' => $result['total_profit'],
+                'selected_requests' => $result->getRequestIds(),
+                'total_profit' => $result->getTotalProfit(),
             ]);
 
-            return new JsonResponse($result);
+            return new JsonResponse($result->toArray());
         } catch (\Throwable $throwable) {
             $this->logger->error('Error in maximize endpoint', [
                 'request_id' => $requestId,

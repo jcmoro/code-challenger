@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Application\UseCase\MaximizeProfits;
 use App\Application\DTO\BookingRequestDTO;
 use App\Application\UseCase\MaximizeProfits\MaximizeProfitsUseCase;
 use App\Domain\Service\BookingOptimizerInterface;
+use App\Domain\ValueObject\BookingOptimizationResult;
 use PHPUnit\Framework\TestCase;
 use Mockery;
 
@@ -36,13 +37,13 @@ final class MaximizeProfitsUseCaseTest extends TestCase
         $dto->sellingRate = 200.0;
         $dto->margin = 20.0;
 
-        $expectedResult = [
-            'request_ids' => ['test_123'],
-            'total_profit' => 40.0,
-            'avg_night' => 8.0,
-            'min_night' => 8.0,
-            'max_night' => 8.0,
-        ];
+        $expectedVo = new BookingOptimizationResult(
+            requestIds: ['test_123'],
+            totalProfit: 40.0,
+            avgNight: 8.0,
+            minNight: 8.0,
+            maxNight: 8.0
+        );
 
         $this->bookingOptimizer
             ->shouldReceive('findOptimalCombination')
@@ -52,10 +53,15 @@ final class MaximizeProfitsUseCaseTest extends TestCase
                     && $requests[0]->getRequestId() === 'test_123'
                     && $requests[0]->getNights() === 5;
             }))
-            ->andReturn($expectedResult);
+            ->andReturn($expectedVo);
 
         $result = $this->useCase->execute([$dto]);
 
-        $this->assertSame($expectedResult, $result);
+        $this->assertInstanceOf(BookingOptimizationResult::class, $result);
+        $this->assertSame(['test_123'], $result->getRequestIds());
+        $this->assertEqualsWithDelta(40.0, $result->getTotalProfit(), PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(8.0, $result->getAvgNight(), PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(8.0, $result->getMinNight(), PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(8.0, $result->getMaxNight(), PHP_FLOAT_EPSILON);
     }
 }
