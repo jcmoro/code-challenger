@@ -1,0 +1,47 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  # Registro automático de la aplicación
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/DependencyInjection/'
+      - '../src/Entity/'
+      - '../src/Kernel.php'
+
+  # -------------------------
+  # Serializer - Infrastructure
+  # -------------------------
+
+  App\Infrastructure\Serializer\CustomMetadataAwareNameConverter:
+    arguments:
+      - '@serializer.mapping.class_metadata_factory'
+      - '@serializer.name_converter.camel_case_to_snake_case'
+
+  App\Infrastructure\Http\Request\BookingRequestParser:
+    arguments:
+      $denormalizer: '@serializer'
+      $validator: '@validator'
+
+  serializer.normalizer.object:
+    class: Symfony\Component\Serializer\Normalizer\ObjectNormalizer
+    arguments:
+      - '@serializer.mapping.class_metadata_factory'
+      - '@App\Infrastructure\Serializer\CustomMetadataAwareNameConverter'
+      - '@property_accessor'
+      - '@property_info'
+      - '@serializer.mapping.class_discriminator_resolver'
+      - null
+      - []
+    tags:
+      - { name: serializer.normalizer, priority: -10 }
+
+framework:
+  serializer:
+    enabled: true
+    enable_attributes: true
+    name_converter: 'App\Infrastructure\Serializer\CustomMetadataAwareNameConverter'
+    circular_reference_handler: '@App\Infrastructure\Serializer\CircularReferenceHandler'

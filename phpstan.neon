@@ -1,0 +1,7 @@
+parameters:
+    level: max
+    paths:
+        - src/
+    excludePaths:
+        - var/
+        - src/Application/DTO/BookingRequestDTOCollection.php

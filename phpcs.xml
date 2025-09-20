@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ruleset name="Jose Carlos Moro">
+    <description>Jose Carlos Moro Coding Standard</description>
+
+    <!-- Base path -->
+    <arg name="basepath" value="."/>
+
+    <!-- Use colors in output -->
+    <arg name="colors"/>
+
+    <!-- A comma separated list of file extensions to check -->
+    <arg name="extensions" value="php"/>
+
+    <!-- How many files should be checked simultaneously -->
+    <arg name="parallel" value="4"/>
+
+    <!-- How many columns wide screen reports should be printed -->
+    <arg name="report-width" value="auto"/>
+
+    <!-- Show progress of the run -->
+    <arg value="p"/>
+
+    <!-- Show sniff codes in all reports -->
+    <arg value="s"/>
+
+    <!-- Files to check -->
+    <file>src/</file>
+    <file>tests/</file>
+
+    <!-- Include the PSR12 standard -->
+    <rule ref="PSR12"/>
+    <rule ref="PSR2.Methods.MethodDeclaration.Underscore">
+        <exclude-pattern>tests/</exclude-pattern>
+    </rule>
+    <rule ref="Generic.Files.LineLength">
+        <severity>0</severity>
+    </rule>
+</ruleset>

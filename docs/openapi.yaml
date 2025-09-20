@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: Code Challenger API
+  description: API para calcular estadísticas y maximizar reservas.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Servidor local de desarrollo
+paths:
+  /stats:
+    post:
+      summary: Calcula estadísticas de reservas
+      description: Dado un conjunto de reservas, devuelve estadísticas (mínimo, máximo y promedio).
+      operationId: calculateStats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '200':
+          description: Estadísticas calculadas correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          description: Error de validación o JSON inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /maximize:
+    post:
+      summary: Maximiza beneficio de reservas
+      description: Devuelve la mejor combinación de reservas que maximiza beneficio.
+      operationId: maximizeBookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '200':
+          description: Combinación óptima encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaximizeResponse'
+        '400':
+          description: Error de validación o JSON inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    BookingRequest:
+      type: object
+      required:
+        - request_id
+        - check_in
+        - nights
+        - selling_rate
+        - margin
+      properties:
+        request_id:
+          type: string
+          example: booking_1
+        check_in:
+          type: string
+          format: date
+          example: 2020-01-01
+        nights:
+          type: integer
+          example: 5
+        selling_rate:
+          type: number
+          format: float
+          example: 200.0
+        margin:
+          type: number
+          format: float
+          example: 20.0
+
+    StatsResponse:
+      type: object
+      properties:
+        avg_night:
+          type: number
+          example: 8.5
+        min_night:
+          type: number
+          example: 7.5
+        max_night:
+          type: number
+          example: 9.0
+
+    MaximizeResponse:
+      type: object
+      properties:
+        selected_bookings:
+          type: array
+          items:
+            type: string
+          example: ["booking_A", "booking_C"]
+        total_profit:
+          type: number
+          example: 76.0
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid JSON format

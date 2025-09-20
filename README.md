@@ -17,7 +17,7 @@ Aplicación PHP 8 con Symfony, diseñada para optimizar reservas y calcular esta
 1. Construir la imagen Docker y dependencias:
 
 ```bash
-make docker-build
+make start
 ```
 
 2. Levantar los contenedores:
