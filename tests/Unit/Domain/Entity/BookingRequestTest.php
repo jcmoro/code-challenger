@@ -133,7 +133,7 @@ final class BookingRequestTest extends TestCase
             margin: 15.0
         );
 
-        // Adjacent bookings should not overlap
+        // Las reservas no se solapan
         $this->assertFalse($booking1->overlapsWith($booking2));
         $this->assertFalse($booking2->overlapsWith($booking1));
     }

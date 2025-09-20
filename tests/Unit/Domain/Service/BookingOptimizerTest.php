@@ -139,28 +139,27 @@ final class BookingOptimizerTest extends TestCase
 
     public function testHandlesComplexOverlappingScenario(): void
     {
-        // Scenario from the guidelines
         $bookings = [
             new BookingRequest(
                 requestId: 'A',
                 checkIn: new DateTimeImmutable('2018-01-01'),
                 nights: 10, // check-out: 2018-01-11
                 sellingRate: 1000.0,
-                margin: 10.0 // total profit: 100.0
+                margin: 10.0 // total beneficio: 100.0
             ),
             new BookingRequest(
                 requestId: 'B',
-                checkIn: new DateTimeImmutable('2018-01-06'), // overlaps with A
+                checkIn: new DateTimeImmutable('2018-01-06'), // se solapa con A
                 nights: 10, // check-out: 2018-01-16
                 sellingRate: 700.0,
-                margin: 10.0 // total profit: 70.0
+                margin: 10.0 // total beneficio: 70.0
             ),
             new BookingRequest(
                 requestId: 'C',
-                checkIn: new DateTimeImmutable('2018-01-12'), // overlaps with B, not with A
+                checkIn: new DateTimeImmutable('2018-01-12'), // se solapa con B, pero no con A
                 nights: 10, // check-out: 2018-01-22
                 sellingRate: 400.0,
-                margin: 10.0 // total profit: 40.0
+                margin: 10.0 // total beneficio: 40.0
             ),
         ];
 
@@ -200,9 +199,9 @@ final class BookingOptimizerTest extends TestCase
         );
 
         // Verify overlaps
-        $this->assertTrue($booking1->overlapsWith($booking2), 'booking1 should overlap with booking2');
-        $this->assertFalse($booking1->overlapsWith($booking3), 'booking1 should NOT overlap with booking3');
-        $this->assertFalse($booking2->overlapsWith($booking3), 'booking2 should NOT overlap with booking3');
+        $this->assertTrue($booking1->overlapsWith($booking2), 'booking1 solapa con booking2');
+        $this->assertFalse($booking1->overlapsWith($booking3), 'booking1 no solapa con booking3');
+        $this->assertFalse($booking2->overlapsWith($booking3), 'booking2 no solapa con booking3');
 
         // Verify profits
         $this->assertEqualsWithDelta(40.0, $booking1->getTotalProfit(), PHP_FLOAT_EPSILON);

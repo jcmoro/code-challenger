@@ -57,7 +57,7 @@ final class MaximizeEndpointTest extends WebTestCase
         $this->assertArrayHasKey('min_night', $responseData);
         $this->assertArrayHasKey('max_night', $responseData);
 
-        // Should select bookata_XY123 + acme_AAAAA for maximum profit
+        // máximo beneficio, bookata_XY123 + acme_AAAAA
         $this->assertContains('bookata_XY123', $responseData['request_ids']);
         $this->assertContains('acme_AAAAA', $responseData['request_ids']);
         $this->assertEqualsWithDelta(88.0, $responseData['total_profit'], PHP_FLOAT_EPSILON);
@@ -97,7 +97,7 @@ final class MaximizeEndpointTest extends WebTestCase
 
         $responseData = json_decode($client->getResponse()->getContent(), true);
 
-        // Should select both since they don't overlap
+        // seleccionar opciones que no se solapan.
         $this->assertCount(2, $responseData['request_ids']);
         $this->assertContains('booking_1', $responseData['request_ids']);
         $this->assertContains('booking_2', $responseData['request_ids']);

@@ -33,11 +33,11 @@ final class BookingRequestParserTest extends TestCase
     public function testParseValidDataReturnsDTOs(): void
     {
         $json = json_encode([
-            ['request_id' => 'abc', 'check_in' => '2025-10-01', 'nights' => 2, 'selling_rate' => 100.0, 'margin' => 10.0]
+            ['request_id' => 'bookata_XY123', 'check_in' => '2025-10-01', 'nights' => 2, 'selling_rate' => 100.0, 'margin' => 10.0]
         ]);
 
         $dto = new BookingRequestDTO();
-        $dto->requestId = 'abc';
+        $dto->requestId = 'bookata_XY123';
         $dto->checkIn = '2025-10-01';
         $dto->nights = 2;
         $dto->sellingRate = 100.0;
@@ -55,7 +55,7 @@ final class BookingRequestParserTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertInstanceOf(BookingRequestDTO::class, $result[0]);
-        $this->assertSame('abc', $result[0]->requestId);
+        $this->assertSame('bookata_XY123', $result[0]->requestId);
     }
 
     public function testParseInvalidJsonThrowsApiException(): void
